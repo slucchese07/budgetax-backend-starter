@@ -1,20 +1,16 @@
 from fastapi import APIRouter
-from sqlalchemy.orm import Session
 from ..database import SessionLocal, engine
 from ..models import Base, Account
 
-router = APIRouter()
+router = APIRouter(tags=["admin"])
 
 @router.post("/admin/init")
 def admin_init():
-    # create tables if they don't exist
+    # Create all tables
     Base.metadata.create_all(bind=engine)
-
-    # seed a default account once
+    # Seed one default account if none exists
     with SessionLocal() as db:
         if not db.query(Account).first():
-            acc = Account(name="Main Account", institution="Cloud", owner_key="user1")
-            db.add(acc)
+            db.add(Account(name="Main Account", institution="Cloud", owner_key="user1"))
             db.commit()
-
     return {"ok": True}
