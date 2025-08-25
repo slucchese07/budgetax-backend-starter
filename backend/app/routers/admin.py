@@ -1,28 +1,24 @@
-# backend/app/routers/admin.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from ..database import SessionLocal, engine, get_db
-from ..models import Base, Account  # adjust import names if your model is named differently
-from ..schemas import Message
-from ..auth import require_api_key  # this is the dependency you already use for X-API-Key
+from ..db import engine, SessionLocal, get_db
+from ..models import Base
+from ..models import Account  # if you want to seed a default account
 
 router = APIRouter()
 
-@router.post("/init", response_model=Message, dependencies=[Depends(require_api_key)])
-def init_database(db: Session = Depends(get_db)):
-    """
-    One-time initializer: creates tables and inserts a default account if none exists.
-    Safe to re-run (it won't duplicate the default account).
-    """
-    # Create all tables (no-op if they already exist)
+@router.post("/init")
+def init(db: Session = Depends(get_db)):
+    # Create tables (no-op if they already exist)
     Base.metadata.create_all(bind=engine)
 
-    # Ensure at least one account exists (needed by transactions endpoints)
+    # Optional: seed a default account if none exist
     existing = db.query(Account).first()
     if not existing:
-        default = Account(name="Main Account", institution="Cloud", owner_key="user1")
-        db.add(default)
+        acc = Account(name="Main Account", institution="Cloud", owner_key="user1")
+        db.add(acc)
         db.commit()
+        db.refresh(acc)
+        return {"status": "created", "account_id": acc.id}
 
-    return Message(message="DB initialized (tables ensured; default account present).")
+    return {"status": "ok", "account_id": existing.id}
