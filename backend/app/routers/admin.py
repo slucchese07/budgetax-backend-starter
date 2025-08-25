@@ -1,24 +1,32 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy.orm import Session
-
-from ..db import engine, SessionLocal, get_db
-from ..models import Base
-from ..models import Account  # if you want to seed a default account
+from ..database import SessionLocal, engine
+from ..models import Base, Account
 
 router = APIRouter()
 
-@router.post("/init")
-def init(db: Session = Depends(get_db)):
-    # Create tables (no-op if they already exist)
+@router.post("/admin/init")
+def admin_init():  Base.metadata.create_all(bind=engine)
+from fastapi import APIRouter
+from sqlalchemy.orm import Session
+from ..database import SessionLocal, engine
+from ..models import Base, Account
+
+router = APIRouter()
+
+@router.post("/admin/init")
+def admin_init():
+    # Create tables if they don't exist
     Base.metadata.create_all(bind=engine)
 
-    # Optional: seed a default account if none exist
-    existing = db.query(Account).first()
-    if not existing:
-        acc = Account(name="Main Account", institution="Cloud", owner_key="user1")
-        db.add(acc)
-        db.commit()
-        db.refresh(acc)
-        return {"status": "created", "account_id": acc.id}
-
-    return {"status": "ok", "account_id": existing.id}
+    # Seed a default account once
+    db: Session = SessionLocal()
+    try:
+        exists = db.query(Account).first()
+        if not exists:
+            acc = Account(name="Main Account", institution="Cloud", owner_key="user1")
+            db.add(acc)
+            db.commit()
+        return {"ok": True}
+    finally:
+        db.close()
