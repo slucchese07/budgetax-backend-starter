@@ -14,7 +14,7 @@ app.add_middleware(
 def healthz():
     return "ok"
 
-from .routers import transactions, assets, auth, income, expenses, invoices
+from .routers import transactions, assets, auth, income, expenses, invoices, admin
 
 app.include_router(auth.router)
 app.include_router(transactions.router)
@@ -22,3 +22,4 @@ app.include_router(assets.router)
 app.include_router(income.router)
 app.include_router(expenses.router)
 app.include_router(invoices.router)
+app.include_router(admin.router, prefix="/admin", tags=["admin"])
