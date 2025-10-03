@@ -1,8 +1,12 @@
-from pydantic import BaseModel
-import os
+# backend/app/core/config.py
+from pydantic_settings import BaseSettings
 
-class Settings(BaseModel):
-    api_key: str = os.getenv("API_KEY", "dev-secret-key")
-    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./budgetax.db")
+class Settings(BaseSettings):
+    api_key: str = "dev-secret-key"
+    database_url: str = "sqlite:///./budgetax.db"
+
+    class Config:
+        env_file = ".env"   # Look for a .env file in project root
+        env_file_encoding = "utf-8"
 
 settings = Settings()
