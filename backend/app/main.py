@@ -1,34 +1,36 @@
+# backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import admin
-app.include_router(admin.router)
-
-from .db import init_db
-from .routers import (
-    admin,          # if you want admin endpoints; otherwise remove this line
-    assets,
-    auth,
-    expenses,
-    income,
-    invoices,
-    liabilities,
-    transactions,
-)
 
 app = FastAPI(title="Budgetax API", version="0.1.0")
 
+# CORS (relax now; lock down later to your app’s origin)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten later to your mobile/web origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-def _startup():
-    init_db()
+# --- Startup (optional) -------------------------------------------------------
+# If init_db exists, run it on boot to ensure tables exist.
+try:
+    from .db import init_db  # type: ignore
 
+    @app.on_event("startup")
+    def _startup() -> None:
+        try:
+            init_db()
+        except Exception:
+            # OK if tables already exist or DB isn’t reachable during build
+            pass
+except Exception:
+    # If .db or init_db is missing, just continue.
+    pass
+
+
+# --- Health -------------------------------------------------------------------
 @app.get("/ping")
 def ping():
     return {"ok": True}
@@ -37,16 +39,53 @@ def ping():
 def healthz():
     return {"ok": True}
 
-# Routers (remove any you don't actually have)
+
+# --- Routers ------------------------------------------------------------------
+# Import each router defensively so a missing file doesn’t crash the app.
 try:
+    from .routers import admin  # /admin/*
     app.include_router(admin.router)
 except Exception:
     pass
 
-app.include_router(auth.router)
-app.include_router(transactions.router)
-app.include_router(assets.router)
-app.include_router(income.router)
-app.include_router(expenses.router)
-app.include_router(invoices.router)
-app.include_router(liabilities.router)
+try:
+    from .routers import assets
+    app.include_router(assets.router)
+except Exception:
+    pass
+
+try:
+    from .routers import auth
+    app.include_router(auth.router)
+except Exception:
+    pass
+
+try:
+    from .routers import expenses
+    app.include_router(expenses.router)
+except Exception:
+    pass
+
+try:
+    from .routers import income
+    app.include_router(income.router)
+except Exception:
+    pass
+
+try:
+    from .routers import invoices
+    app.include_router(invoices.router)
+except Exception:
+    pass
+
+try:
+    from .routers import liabilities
+    app.include_router(liabilities.router)
+except Exception:
+    pass
+
+try:
+    from .routers import transactions
+    app.include_router(transactions.router)
+except Exception:
+    pass
